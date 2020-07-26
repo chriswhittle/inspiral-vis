@@ -1,3 +1,9 @@
+function fromSpherical(r, phi, theta) {
+    return new THREE.Vector3(r * Math.sin(theta) * Math.cos(phi),
+			 r * Math.sin(theta) * Math.sin(phi),
+			 r * Math.cos(theta));
+}
+
 var scene = new THREE.Scene();
 var camera = new THREE.PerspectiveCamera( 75, window.innerWidth / window.innerHeight, 0.1, 1000 );
 
@@ -5,6 +11,21 @@ var renderer = new THREE.WebGLRenderer();
 renderer.setSize( window.innerWidth, window.innerHeight-200 );
 renderer.setClearColor (0x111133, 1);
 document.body.appendChild( renderer.domElement );
+
+var STAR_COUNT = 2000;
+var STAR_DIST = 1000;
+var dotGeometry = new THREE.Geometry();
+dotGeometry.vertices.push(new THREE.Vector3( 0, 0, 0));
+var dotMaterial = new THREE.PointsMaterial( { size: 1, sizeAttenuation: false } );
+
+for (var i = 0; i < STAR_COUNT; i++) {
+    var dot = new THREE.Points( dotGeometry, dotMaterial );
+    scene.add( dot );
+    phi = Math.random() * Math.PI * 2;
+    theta = Math.acos(2*Math.random() - 1);
+    dot.position.copy(fromSpherical(STAR_DIST, phi, theta));
+}
+
 
 var geometry = new THREE.SphereGeometry(1, 20, 20);
 var material = new THREE.MeshBasicMaterial( { color: 0x000000 } );
@@ -15,14 +36,6 @@ scene.add( sphere );
 
 var sphere = new THREE.Mesh( geometry, material );
 sphere.position.x = 2;
-scene.add( sphere );
-
-var sphere = new THREE.Mesh( geometry, material );
-sphere.position.y = -2;
-scene.add( sphere );
-
-var sphere = new THREE.Mesh( geometry, material );
-sphere.position.y = 2;
 scene.add( sphere );
 
 
@@ -57,9 +70,7 @@ function dragEnd() {
 }
 
 function updateCamera(phi, theta) {
-    camera.position.x = oc.r * Math.sin(theta) * Math.cos(phi);
-    camera.position.y = oc.r * Math.sin(theta) * Math.sin(phi);
-    camera.position.z = oc.r * Math.cos(theta);
+    camera.position.copy(fromSpherical(oc.r, phi, theta));
 
     camera.up.set(0,0,1);
     camera.lookAt(new THREE.Vector3(0,0,0));

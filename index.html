@@ -9,9 +9,34 @@
     </style>
   </head>
   <body>
+    <div id="panel">
+      <div id="controls">
+
+	<form id="m1" class="label-range">
+	  <div class="range-name-col">
+	    <div class="container">Mass 1 = </div>
+	    <div class="label-container"><label></label> solar masses</div>
+	  </div>
+	  <div class="container"><input type="range" /></div>
+	</form>
+
+
+	<form id="m2" class="label-range">
+	  <div class="range-name-col">
+	    <div class="container">Mass 2 = </div>
+	    <div class="label-container"><label></label> solar masses</div>
+	  </div>
+	  <div class="container"><input type="range" /></div>
+	</form>
+	
+      </div>
+      <canvas id="waveform"></canvas>
+    </div>
+    
     <link rel="stylesheet" type="text/css" href="css/inspiral.css">
+    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js" integrity="sha256-4+XzXVhsDmqanXGHaHvgh1gMQKX40OUvDEBTu8JcmNs=" crossorigin="anonymous"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r118/three.min.js" integrity="sha512-ZoEQdcOJ16M20VnLaQxmZlthvLdTbF9CSAAyvZyzru+Em8NEY+7Xy0jdWdUjdOlo7hbPVmaobVBpUF9aqmXENA==" crossorigin="anonymous"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@2.8.0"></script>
-    <script type="text/javascript" src="js/inspiral.js"></script>    
+    <script type="text/javascript" src="js/inspiral.js"></script>
   </body>
 </html>

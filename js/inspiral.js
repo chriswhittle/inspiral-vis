@@ -40,9 +40,11 @@ var G = 6.67e-11;
 var Mo = 2e30;
 
 var R0 = 5*(2*G*(20*Mo)/c**2);
-var DIST_SCALE = 3 / R0;
+var TAU0 = 0.077;
+var DIST_SCALE = 6 / R0;
 
 var M0 = 10;
+var MASS_SCALE = 0.1;
 
 var BRIGHT_GREEN = 'rgb(150, 200, 50)';
 var DULL_GREEN = 'rgb(20, 70, 0)';
@@ -55,16 +57,9 @@ var camera = new THREE.PerspectiveCamera( 75, window.innerWidth / window.innerHe
 var renderer = new THREE.WebGLRenderer();
 renderer.setSize( window.innerWidth, window.innerHeight-200 );
 renderer.setClearColor (0x111133, 1);
-document.body.appendChild( renderer.domElement );
-
+document.body.insertBefore(renderer.domElement,
+			   document.body.firstChild);
 // plot
-
-controlsDiv = document.createElement("div");
-controlsDiv.setAttribute('id', 'controls');
-document.body.appendChild( controlsDiv );
-plotCanvas = document.createElement('canvas');
-plotCanvas.setAttribute('id', 'waveform');
-controlsDiv.appendChild(plotCanvas);
 
 var originalLineDraw = Chart.controllers.line.prototype.draw;
 Chart.helpers.extend(Chart.controllers.line.prototype, {
@@ -91,7 +86,7 @@ Chart.helpers.extend(Chart.controllers.line.prototype, {
     }
 });
 
-var chart = new Chart(plotCanvas, {
+var chart = new Chart($('#waveform'), {
     type: 'line',
     data: {
 	datasets: [{
@@ -155,27 +150,41 @@ for (var i = 0; i < STAR_COUNT; i++) {
 class System {
     constructor(bbhs) {
 	this.bbhs = bbhs;
-	this.dt = 0.0005/3;
+	this.dt = 0.0005;
+	
+	this.product = null;
 
 	this.updateOrbitParams();
     }
 
+    updateBodyValues() {
+	this.bbhs.forEach((bbh, i) =>
+			  {
+			      bbh.updateMass(mSliders[i].getValue());
+			  });
+    }
+    
     updateOrbitParams() {
 	var m1 = this.bbhs[0].m;
-	var m2 = this.bbhs[0].m;
-	
-	this.m = (m1+m2)*Mo;
+	var m2 = this.bbhs[1].m;
+
+	this.bbhs[0].phi = 0;
+	this.bbhs[1].phi = Math.PI;
+
+	this.m_ = m1+m2
+	this.m = this.m_*Mo;
 	this.mu = m1*m2/(m1+m2)*Mo;
 	this.Mc = this.mu**(3/5) * this.m**(2/5);
 
-	this.R0 = 5*(2*G*this.m/c**2);
-
-	this.tau0 = 5/256 * c**5 * R0**4 / G**3 / this.m**2 / this.mu;
-
-	console.log(5/256 * c**5 * R0**4 / G**3 / this.m**2 / this.mu);
+	this.tau0 = TAU0;
+	this.R0 = (G**3*this.m**2*this.mu*this.tau0/c**5 * 256/5)**(1/4)
 	
 	this.t = 0;
-
+	if (this.product != null) {
+	    this.product.remove();
+	}
+	this.product = null;
+	
 	this.times = linspace(0, this.tau0-this.dt, 500);
 	this.hs = this.times.map(t =>
 				 (G*this.Mc / c**2)**(5/4)
@@ -186,21 +195,28 @@ class System {
 				 ));
     }
     
-    orbit() {
+    drawOrbit() {
 
-	// increment time
-	this.t += this.dt;
+	if (this.t < this.tau0) {
+	    // calculate physics
+	    var newR = this.R0*((this.tau0 - this.t)/this.tau0)**(1/4);
+	    var f_orbit = 1/Math.PI * (5/256 / (this.tau0 - this.t))**(3/8) * (G*this.Mc/c**3)**(-5/8)/2;
+	    var dphi = f_orbit*this.dt * 2*Math.PI;
 
-	// calculate physics
-	var newR = this.R0*((this.tau0 - this.t)/this.tau0)**(1/4);
-	var f_orbit = 1/Math.PI * (5/256 / (this.tau0 - this.t))**(3/8) * (G*this.Mc/c**3)**(-5/8)/2;
-	var dphi = f_orbit*this.dt * 2*Math.PI;
+	    this.bbhs.forEach(function(bbh) {
+		bbh.r = newR*(system.m_ - bbh.m)/system.m_;
+		bbh.phi += dphi;
+		bbh.draw();
+	    });
+	}
+	else {
+	    if (this.product == null) {
+		this.product = new Body(this.m_, 0);
+		console.log(this.product);
+		this.bbhs.forEach(bbh => bbh.remove());
+	    }
 
-	this.bbhs.forEach(function(bbh) {
-	    bbh.r = newR;
-	    bbh.phi += dphi;
-	    bbh.draw();
-	});
+	}
 
 	// update chart
 	this.curTime = Math.round(this.t/(this.times[1]-this.times[0]));
@@ -212,20 +228,18 @@ class System {
 }
 
 class Body {
-    constructor(m, r, phi) {
-	this.radius = 1;
-
+    constructor(m, r) {
 	this.m = m;
 	
 	this.r = r;
-	this.phi = phi;
+	this.phi = 0;
 	this.addScene();
 
 	this.draw();
     }
-
+    
     addScene() {
-	var geometry = new THREE.SphereGeometry(this.radius, 20, 20);
+	var geometry = new THREE.SphereGeometry(this.m * MASS_SCALE, 20, 20);
 	var material = new THREE.MeshBasicMaterial( { color: 0x000000 } );
 
 	this.mesh = new THREE.Mesh( geometry, material );
@@ -236,15 +250,61 @@ class Body {
 	this.mesh.position.copy(fromSpherical(this.r*DIST_SCALE, this.phi, Math.PI/2));
     }
 
+    updateMass(m) {
+	this.m = m;
+	this.remove();
+	this.addScene();
+    }
+
+    remove() {
+	scene.remove(this.mesh);
+    }
+
 }
 
 var bbhs = [];
 
 for (var i = 0; i < 2; i++) {
-    bbhs.push(new Body(M0, R0, Math.PI/2*(-1)**i));
+    bbhs.push(new Body(M0, R0));
 }
 
 var system = new System(bbhs);
+
+// controls class
+
+class Slider {
+    constructor(min, max, def, id, rounding = 0, step = 1) {
+	this.value = def;
+
+	this.label_object = $("#" + id + " label");
+	this.range_object = $("#" + id + " input[type=range]");
+
+	this.range_object.attr('min', min);
+	this.range_object.attr('max', max);
+	this.range_object.attr('step', step);
+	this.range_object.val(def);
+
+	this.updateLabel();
+	this.range_object.on('input change', () => {
+	    this.updateLabel();
+	    system.updateBodyValues();
+	    system.updateOrbitParams();
+	} );
+    }
+
+    getValue() {
+	return parseInt(this.range_object.val());
+    }
+
+    updateLabel() {
+	this.label_object.html(parseFloat(this.getValue()).toFixed(this.rounding));
+    }
+}
+
+var mSliders = [];
+for (var i = 1; i <= 2; i++) {
+    mSliders.push(new Slider(5, 50, 10, 'm'+i));
+}
 
 // camera controls
 
@@ -314,10 +374,16 @@ renderer.domElement.addEventListener('wheel', zoom);
 
 // animate inspiral
 
-var animate = function () {
+var animTime = 0;
+var animate = function (time) {
     requestAnimationFrame( animate );
 
-    system.orbit();
+    // increment time
+    timeFactor = (time-animTime)/50;
+    system.t += isNaN(timeFactor) ? system.dt : timeFactor*system.dt;
+    animTime = time;
+    
+    system.drawOrbit();
     
     renderer.render( scene, camera );
 };

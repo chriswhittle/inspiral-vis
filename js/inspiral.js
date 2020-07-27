@@ -6,10 +6,18 @@ function fromSpherical(r, phi, theta) {
 			 r * Math.cos(theta));
 }
 
-function zip(a, b) {
-    return a.map(function(o, i) {
-	return {x: o, y: b[i]};
-    });
+function zip(a, b, start=0, end=null) {
+    var arr = [];
+
+    if (end == null) {
+	end = a.length;
+    }
+    
+    for (var i = start; i < end; i++) {
+	arr.push({x: a[i], y: b[i]});
+    }
+
+    return arr;
 }
 
 function linspace(start, end, n) {
@@ -24,6 +32,20 @@ function linspace(start, end, n) {
 
     return arr;
 }
+
+// constants
+
+var c = 3e8;
+var G = 6.67e-11;
+var Mo = 2e30;
+
+var R0 = 5*(2*G*(20*Mo)/c**2);
+var DIST_SCALE = 3 / R0;
+
+var M0 = 10;
+
+var BRIGHT_GREEN = 'rgb(150, 200, 50)';
+var DULL_GREEN = 'rgb(20, 70, 0)';
 
 // Three.js setup
 
@@ -44,14 +66,45 @@ plotCanvas = document.createElement('canvas');
 plotCanvas.setAttribute('id', 'waveform');
 controlsDiv.appendChild(plotCanvas);
 
+var originalLineDraw = Chart.controllers.line.prototype.draw;
+Chart.helpers.extend(Chart.controllers.line.prototype, {
+    draw: function() {
+	originalLineDraw.apply(this, arguments);
+	
+	var chart = this.chart;
+	var ctx = chart.chart.ctx;
+
+	var index = chart.config.data.lineAtIndex;
+	
+	if (index && this.index == 0) {
+	    const xaxis = chart.scales['x-axis-0'];
+	    const yaxis = chart.scales['y-axis-0'];
+	    ctx.beginPath();
+	    ctx.strokeStyle = BRIGHT_GREEN;
+	    
+	    let linePosition = xaxis.getPixelForValue(
+		system.times[system.curTime], index);
+	    ctx.moveTo(linePosition, yaxis.top);
+	    ctx.lineTo(linePosition, yaxis.bottom);
+	    ctx.stroke();
+	}
+    }
+});
+
 var chart = new Chart(plotCanvas, {
     type: 'line',
     data: {
 	datasets: [{
-	    borderColor: 'rgb(100, 150, 0)',
+	    borderColor: BRIGHT_GREEN,
 	    data: undefined,
 	    label: 'Waveform'
-	}]
+	},
+	{
+	    borderColor: DULL_GREEN,
+	    data: undefined,
+	    label: 'Waveform'
+	}],
+	lineAtIndex: 2
     },
     options: {
 	elements: {
@@ -79,6 +132,7 @@ var chart = new Chart(plotCanvas, {
     }
 });
 
+chart.options.animation.duration = 0;
 
 // skybox
 
@@ -95,17 +149,6 @@ for (var i = 0; i < STAR_COUNT; i++) {
     theta = Math.acos(2*Math.random() - 1);
     dot.position.copy(fromSpherical(STAR_DIST, phi, theta));
 }
-
-// constants
-
-var c = 3e8;
-var G = 6.67e-11;
-var Mo = 2e30;
-
-var R0 = 5*(2*G*(20*Mo)/c**2);
-var DIST_SCALE = 3 / R0;
-
-var M0 = 10;
 
 // BH class and geometries
 
@@ -133,22 +176,21 @@ class System {
 	
 	this.t = 0;
 
-	var times = linspace(0, this.tau0-this.dt, 500);
-	var hs = times.map(t =>
-		       (G*this.Mc / c**2)**(5/4)
-			   * (5/c/(this.tau0 - t))**(1/4)
-			   * Math.cos(
-				   -2*(5*G*this.Mc/c**3)**(-5/8)
-				   *(this.tau0 - t)**(5/8)));
-
-	chart.data.datasets[0].data = zip(times, hs);
-	chart.update();
+	this.times = linspace(0, this.tau0-this.dt, 500);
+	this.hs = this.times.map(t =>
+				 (G*this.Mc / c**2)**(5/4)
+				 * (5/c/(this.tau0 - t))**(1/4)
+				 * Math.cos(
+					 -2*(5*G*this.Mc/c**3)**(-5/8)
+					 *(this.tau0 - t)**(5/8)));
     }
     
     orbit() {
 
+	// increment time
 	this.t += this.dt;
-	
+
+	// calculate physics
 	var newR = this.R0*((this.tau0 - this.t)/this.tau0)**(1/4);
 	var f_orbit = 67 * (1.21*Mo/this.Mc)**(5/8) * (this.tau0 - this.t)**(-3/8);
 	var dphi = f_orbit*this.dt * 2*Math.PI;
@@ -158,6 +200,14 @@ class System {
 	    bbh.phi += dphi;
 	    bbh.draw();
 	});
+
+	// update chart
+	this.curTime = Math.round(this.t/this.dt);
+	
+	chart.data.datasets[0].data = zip(this.times, this.hs, 0, this.curTime);
+	chart.data.datasets[1].data = zip(this.times, this.hs, this.curTime);	
+	
+	chart.update();
     }
 }
 

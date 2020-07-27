@@ -1,0 +1,8 @@
+div#controls {
+    background-color: black;
+}
+
+canvas#waveform {
+    width: 80% !important;
+    height: 200px !important;
+}

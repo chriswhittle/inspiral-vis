@@ -12,6 +12,20 @@ div#panel {
 div#controls {
     width: 25%;
     float: left;
+    text-align: center;
+}
+
+div#controls button {
+    color: #77aa00;
+    font-size: 24pt;
+    border: 1px #77aa00 solid;
+    width: 70pt;
+    margin: 10pt 0;
+}
+
+div#controls button:hover {
+    color: #aadd00;
+    border: 1px #aadd00 solid;
 }
 
 canvas#waveform {

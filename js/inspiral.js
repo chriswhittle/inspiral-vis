@@ -154,6 +154,8 @@ class System {
 	
 	this.product = null;
 
+	this.playing = true;
+	
 	this.updateOrbitParams();
     }
 
@@ -165,6 +167,8 @@ class System {
     }
     
     updateOrbitParams() {
+	this.play();
+	
 	var m1 = this.bbhs[0].m;
 	var m2 = this.bbhs[1].m;
 
@@ -216,6 +220,8 @@ class System {
 		this.bbhs.forEach(bbh => bbh.remove());
 	    }
 
+	    this.pause();
+
 	}
 
 	// update chart
@@ -224,6 +230,31 @@ class System {
 	chart.data.datasets[0].data = zip(this.times, this.hs, 0, this.curTime);
 	chart.data.datasets[1].data = zip(this.times, this.hs, this.curTime);	
 	chart.update();
+    }
+    
+    play() {
+	this.playing = true;
+	$('button#play').children().first().addClass('fa-pause');
+	$('button#play').children().first().removeClass('fa-play');
+    }
+
+    pause() {
+	this.playing = false;
+	$('button#play').children().first().addClass('fa-play');
+	$('button#play').children().first().removeClass('fa-pause');
+    }
+
+    toggle() {
+	if (this.playing) {
+	    this.pause();
+	}
+	else if (this.t > this.tau0) {
+	    this.updateBodyValues();
+	    this.updateOrbitParams();
+	}
+	else {
+	    this.play();
+	}
     }
 }
 
@@ -270,7 +301,7 @@ for (var i = 0; i < 2; i++) {
 
 var system = new System(bbhs);
 
-// controls class
+// controls
 
 class Slider {
     constructor(min, max, def, id, rounding = 0, step = 1) {
@@ -305,6 +336,8 @@ var mSliders = [];
 for (var i = 1; i <= 2; i++) {
     mSliders.push(new Slider(5, 50, 10, 'm'+i));
 }
+
+$('button#play').on('click', () => system.toggle());
 
 // camera controls
 
@@ -379,11 +412,15 @@ var animate = function (time) {
     requestAnimationFrame( animate );
 
     // increment time
-    timeFactor = (time-animTime)/50;
-    system.t += isNaN(timeFactor) ? system.dt : timeFactor*system.dt;
-    animTime = time;
+    if (system.playing) {
+	timeFactor = (time-animTime)/50;
+	system.t += isNaN(timeFactor) ? system.dt : timeFactor*system.dt;
     
-    system.drawOrbit();
+	system.drawOrbit();
+
+    }
+
+    animTime = time;
     
     renderer.render( scene, camera );
 };

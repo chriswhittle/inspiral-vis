@@ -9,9 +9,12 @@
     </style>
   </head>
   <body>
+    <link rel="stylesheet" type="text/css" href="css/inspiral.css">
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css" integrity="sha384-wvfXpqpZZVQGK6TAh5PVlGOfQNHSoD2xbE+QkPxCAFlNEevoEH3Sl0sibVcOQVnN" crossorigin="anonymous">
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
     <div id="panel">
       <div id="controls">
-
+	
 	<form id="m1" class="label-range">
 	  <div class="range-name-col">
 	    <div class="container">Mass 1 = </div>
@@ -19,8 +22,8 @@
 	  </div>
 	  <div class="container"><input type="range" /></div>
 	</form>
-
-
+	
+	
 	<form id="m2" class="label-range">
 	  <div class="range-name-col">
 	    <div class="container">Mass 2 = </div>
@@ -28,15 +31,17 @@
 	  </div>
 	  <div class="container"><input type="range" /></div>
 	</form>
+
+	<button type="button" class="btn" id="play"><span class="fa fa-pause"></span></button>
 	
       </div>
       <canvas id="waveform"></canvas>
     </div>
-    
-    <link rel="stylesheet" type="text/css" href="css/inspiral.css">
+
     <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js" integrity="sha256-4+XzXVhsDmqanXGHaHvgh1gMQKX40OUvDEBTu8JcmNs=" crossorigin="anonymous"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r118/three.min.js" integrity="sha512-ZoEQdcOJ16M20VnLaQxmZlthvLdTbF9CSAAyvZyzru+Em8NEY+7Xy0jdWdUjdOlo7hbPVmaobVBpUF9aqmXENA==" crossorigin="anonymous"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@2.8.0"></script>
     <script type="text/javascript" src="js/inspiral.js"></script>
+
   </body>
 </html>

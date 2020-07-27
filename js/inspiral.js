@@ -155,7 +155,7 @@ for (var i = 0; i < STAR_COUNT; i++) {
 class System {
     constructor(bbhs) {
 	this.bbhs = bbhs;
-	this.dt = 0.0005;
+	this.dt = 0.0005/3;
 
 	this.updateOrbitParams();
     }
@@ -182,7 +182,8 @@ class System {
 				 * (5/c/(this.tau0 - t))**(1/4)
 				 * Math.cos(
 					 -2*(5*G*this.Mc/c**3)**(-5/8)
-					 *(this.tau0 - t)**(5/8)));
+					 *(this.tau0 - t)**(5/8)
+				 ));
     }
     
     orbit() {
@@ -192,7 +193,7 @@ class System {
 
 	// calculate physics
 	var newR = this.R0*((this.tau0 - this.t)/this.tau0)**(1/4);
-	var f_orbit = 67 * (1.21*Mo/this.Mc)**(5/8) * (this.tau0 - this.t)**(-3/8);
+	var f_orbit = 1/Math.PI * (5/256 / (this.tau0 - this.t))**(3/8) * (G*this.Mc/c**3)**(-5/8)/2;
 	var dphi = f_orbit*this.dt * 2*Math.PI;
 
 	this.bbhs.forEach(function(bbh) {
@@ -202,11 +203,10 @@ class System {
 	});
 
 	// update chart
-	this.curTime = Math.round(this.t/this.dt);
+	this.curTime = Math.round(this.t/(this.times[1]-this.times[0]));
 	
 	chart.data.datasets[0].data = zip(this.times, this.hs, 0, this.curTime);
 	chart.data.datasets[1].data = zip(this.times, this.hs, this.curTime);	
-	
 	chart.update();
     }
 }

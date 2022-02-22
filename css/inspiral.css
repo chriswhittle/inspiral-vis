@@ -3,6 +3,18 @@ body {
     font-size: 16pt;
 }
 
+div#view-controls {
+    position: absolute;
+    color: white;
+    background-color: rgba(150, 150, 150, 0.3);
+    left: 15px;
+    top: 15px;
+    width: 400px;
+    padding: 10px;
+    border-radius: 10px;
+    z-index: 5;
+}
+
 div#panel {
     background-color: black;
     color: white;
